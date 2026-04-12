@@ -9,6 +9,12 @@
     "type": "audio",
     "title": "搁浅",
     "artist": "原唱：周杰伦",
-    "src": "./002.mp3"
+    "src": "./002.m4a"
+  },
+  {
+    "type": "audio",
+    "title": "发如雪",
+    "artist": "原唱：周杰伦",
+    "src": "./003.m4a"
   }
 ]
