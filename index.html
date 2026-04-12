@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+  <title>俺是老吴 · 作品集</title>
+  <style>
+    /* 极简重置 */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #faf8f5;
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      color: #1e1b18;
+      line-height: 1.5;
+      padding: 2rem 1.2rem;
+    }
+
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+    }
+
+    /* 头部区域：标题 + 搜索 */
+    .page-header {
+      margin-bottom: 2rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      border-bottom: 2px solid #e3d9cf;
+      padding-bottom: 1rem;
+    }
+
+    .page-header h1 {
+      font-size: 2.6rem;
+      font-weight: 500;
+      letter-spacing: -0.5px;
+      color: #2f241c;
+    }
+
+    .page-header h1 span {
+      font-weight: 300;
+      color: #7f6653;
+      font-size: 1.2rem;
+      margin-left: 10px;
+    }
+
+    /* 搜索框 —— 极简 */
+    .search-wrapper {
+      display: flex;
+      align-items: center;
+    }
+
+    .search-input {
+      font-family: inherit;
+      font-size: 1rem;
+      padding: 0.5rem 1rem 0.5rem 2.2rem;
+      border: 1px solid #d6cbc0;
+      border-radius: 40px;
+      background: white url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%237f6653" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>') no-repeat 12px center;
+      background-size: 16px;
+      width: 240px;
+      transition: border 0.1s;
+      outline: none;
+    }
+
+    .search-input:focus {
+      border-color: #a28d7c;
+    }
+
+    .search-input::placeholder {
+      color: #a49182;
+      font-weight: 300;
+    }
+
+    /* 卡片网格 */
+    .media-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 1.8rem;
+    }
+
+    /* 卡片 — 无预览图，直接展示内容 */
+    .media-card {
+      background: #ffffff;
+      border-radius: 20px;
+      border: 1px solid #e5dbd2;
+      padding: 1.2rem 1.2rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .media-title {
+      font-size: 1.3rem;
+      font-weight: 550;
+      margin-bottom: 4px;
+      color: #2d221b;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .media-meta {
+      font-size: 0.9rem;
+      color: #7b6656;
+      margin-bottom: 14px;
+      display: flex;
+      gap: 10px;
+    }
+
+    .player-wrapper {
+      margin-top: 6px;
+      border-radius: 14px;
+      background: #f3ede7;
+      padding: 6px 8px;
+    }
+
+    audio, video {
+      width: 100%;
+      border-radius: 12px;
+    }
+
+    audio {
+      height: 38px;
+    }
+
+    /* 无结果提示 */
+    .no-result {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 2.5rem;
+      color: #8f7a69;
+      background: #f3ede7;
+      border-radius: 40px;
+      font-size: 1rem;
+    }
+
+    /* 页脚 */
+    .footer {
+      margin-top: 3.5rem;
+      text-align: center;
+      color: #897a6e;
+      font-size: 0.9rem;
+      border-top: 1px dashed #d9cdc2;
+      padding-top: 2rem;
+    }
+
+    @media (max-width: 600px) {
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+      .search-input {
+        width: 100%;
+      }
+      .page-header h1 {
+        font-size: 2.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header class="page-header">
+    <h1>俺是老吴</h1>
+    <div class="search-wrapper">
+      <input type="text" id="searchInput" class="search-input" placeholder="搜索歌曲..." autocomplete="off">
+    </div>
+  </header>
+
+  <!-- 网格容器，动态生成卡片 -->
+  <div id="mediaGrid" class="media-grid"></div>
+</div>
+
+<script>
+  (function() {
+    'use strict';
+
+    // ---------- 媒体文件库 (模拟目录扫描结果) ----------
+    let mediaFiles = [];
+
+    async function loadMediaList() {
+    try {
+        const response = await fetch('media-list.json');
+        mediaFiles = await response.json();
+        renderCards(mediaFiles);
+    } catch (error) {
+        grid.innerHTML = '<div class="no-result">加载媒体列表失败</div>';
+    }
+    }
+
+    loadMediaList();
+
+    const grid = document.getElementById('mediaGrid');
+    const searchInput = document.getElementById('searchInput');
+
+    // ---------- 渲染函数：根据过滤后的数组生成卡片 (无预览图片) ----------
+    function renderCards(files) {
+      grid.innerHTML = '';
+      
+      if (!files || files.length === 0) {
+        const noResultDiv = document.createElement('div');
+        noResultDiv.className = 'no-result';
+        noResultDiv.textContent = '没有找到匹配的作品';
+        grid.appendChild(noResultDiv);
+        return;
+      }
+
+      files.forEach(file => {
+        const card = document.createElement('div');
+        card.className = 'media-card';
+        
+        // 标题
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'media-title';
+        titleDiv.innerHTML = `${file.title}`;
+        
+        // meta信息
+        const metaDiv = document.createElement('div');
+        metaDiv.className = 'media-meta';
+        metaDiv.innerHTML = `<span>${file.artist}</span>`;
+        
+        // 播放器区域
+        const playerWrap = document.createElement('div');
+        playerWrap.className = 'player-wrapper';
+        
+        let mediaElement;
+        if (file.type === 'audio') {
+          mediaElement = document.createElement('audio');
+          mediaElement.controls = true;
+          mediaElement.preload = 'metadata';
+          const source = document.createElement('source');
+          source.src = file.src;
+          source.type = 'audio/mpeg';
+          mediaElement.appendChild(source);
+        } else {
+          mediaElement = document.createElement('video');
+          mediaElement.controls = true;
+          mediaElement.preload = 'metadata';
+          if (file.poster) mediaElement.poster = file.poster;
+          const source = document.createElement('source');
+          source.src = file.src;
+          source.type = 'video/mp4';
+          mediaElement.appendChild(source);
+          mediaElement.style.width = '100%';
+          mediaElement.style.borderRadius = '12px';
+        }
+        
+        playerWrap.appendChild(mediaElement);
+        
+        card.appendChild(titleDiv);
+        card.appendChild(metaDiv);
+        card.appendChild(playerWrap);
+        
+        grid.appendChild(card);
+      });
+    }
+
+    // ---------- 搜索过滤逻辑 (遍历标题和艺术家) ----------
+    function filterMedia(searchTerm) {
+      const term = searchTerm.trim().toLowerCase();
+      if (term === '') {
+        return mediaFiles.slice(); // 返回全部
+      }
+      return mediaFiles.filter(file => {
+        const titleMatch = file.title.toLowerCase().includes(term);
+        const artistMatch = file.artist.toLowerCase().includes(term);
+        // 也可扩展搜索 duration 等，但不需要，保持简单。
+        return titleMatch || artistMatch;
+      });
+    }
+
+    // 更新视图：根据搜索词重新渲染
+    function updateDisplay() {
+      const searchTerm = searchInput.value;
+      const filtered = filterMedia(searchTerm);
+      renderCards(filtered);
+    }
+
+    // ---------- 初始化: 渲染全部 + 监听搜索 ----------
+    function init() {
+      // 初始渲染全部
+      renderCards(mediaFiles);
+      
+      // 监听输入事件 (实时搜索)
+      searchInput.addEventListener('input', updateDisplay);
+    }
+
+    init();
+
+    // 如果将来需要从真实API获取列表，可修改此处，例如:
+    // async function fetchMedia() { ... ; renderCards(data); }
+    // 目前保留模拟扫描逻辑。
+  })();
+</script>
+</body>
+</html>
